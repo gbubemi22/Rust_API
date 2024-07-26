@@ -1,7 +1,6 @@
 use mongodb::bson::{doc, oid::ObjectId};
 use serde::{Deserialize, Serialize};
 
-
 use crate::utils::hashing;
 use bcrypt;
 

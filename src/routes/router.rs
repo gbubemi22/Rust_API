@@ -7,6 +7,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .service(
                 web::scope("/users")
                     .route("/register", web::post().to(user_controller::register_user))
+                    .route("/login", web::post().to(user_controller::login_user))
                     // Add more routes here
             )
     );
