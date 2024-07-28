@@ -6,9 +6,9 @@ use env_logger::Env;
 use log::info;
 
 mod middleware;
-use middleware::error_handler::handle_error;
 use middleware::not_found::not_found;
 use serde_json::json;
+use service::todo_service::TodoService;
 use service::user_service::UserService;
 
 mod controller;
@@ -17,8 +17,6 @@ mod model;
 mod routes;
 mod service;
 mod utils;
-
-
 
 #[get("/")]
 async fn default() -> impl Responder {
@@ -45,10 +43,10 @@ async fn main() -> std::io::Result<()> {
         .await
         .expect("Failed to connect to MongoDB");
 
-    
- // Create UserService
- let user_service = web::Data::new(UserService::new(&mongo_client));
- 
+    // Create UserService
+    let user_service = web::Data::new(UserService::new(&mongo_client));
+    let todo_service = web::Data::new(TodoService::new(&mongo_client));
+
     // Start the HTTP server
     HttpServer::new(move || {
         App::new()
@@ -56,13 +54,14 @@ async fn main() -> std::io::Result<()> {
             .wrap(Logger::new("%a %{User-Agent}i"))
             .app_data(web::Data::new(mongo_client.clone()))
             .app_data(user_service.clone())
+            .app_data(todo_service.clone())
             .configure(routes::router::config)
             .wrap(
                 ErrorHandlers::new()
-                    .handler(StatusCode::NOT_FOUND, not_found)
-                    .default_handler(handle_error),
+                    .handler(StatusCode::NOT_FOUND, not_found),
+                    // .default_handler(handle_error),
             )
-            //.app_data(db_data.clone())
+          
             .service(default)
     })
     .bind(("localhost", 5001))?

@@ -12,7 +12,7 @@ pub struct TodoService {
 
 impl TodoService {
     pub fn new(client: &Client) -> Self {
-        let collection = client.database("Rust_Pro").collection("todos");
+        let collection = client.database("Rust_PRo").collection("todos");
         TodoService { collection }
     }
 

@@ -2,13 +2,12 @@ use crate::model::user_model::User;
 use crate::utils::error::CustomError;
 use crate::utils::model::LoginRequests;
 use crate::utils::{hashing, password_validation};
+use chrono::{Duration, Utc};
 use jsonwebtoken::{encode, EncodingKey, Header};
-use chrono::{Utc, Duration};
 
 use mongodb::bson::{doc, oid::ObjectId};
 use mongodb::{Client, Collection};
 use serde::Serialize;
-
 
 pub struct UserService {
     collection: Collection<User>,
@@ -22,7 +21,7 @@ pub struct LoginResponse {
 
 #[derive(Serialize)]
 struct Claims {
-    sub: String,
+    id: String,
     exp: usize,
 }
 
@@ -112,9 +111,9 @@ impl UserService {
             .map_err(|_| CustomError::InternalServerError("Database error".to_string()))?
             .ok_or_else(|| CustomError::UnauthorizedError("Invalid credentials".to_string()))?;
 
-        if !hashing::verify_password(password, &user.password).map_err(|_| {
-            CustomError::InternalServerError("Invalid credentials".to_string())
-        })? {
+        if !hashing::verify_password(password, &user.password)
+            .map_err(|_| CustomError::InternalServerError("Invalid credentials".to_string()))?
+        {
             return Err(CustomError::UnauthorizedError(
                 "Invalid credentials".to_string(),
             ));
@@ -122,10 +121,7 @@ impl UserService {
 
         Ok(user)
     }
-    pub async fn login_fn(
-        &self,
-        login_data: LoginRequests,
-    ) -> Result<String, CustomError> {
+    pub async fn login_fn(&self, login_data: LoginRequests) -> Result<String, CustomError> {
         // Authenticate user
         let user = self
             .authenticate_user(&login_data.username, &login_data.password)
@@ -133,7 +129,7 @@ impl UserService {
 
         // Generate JWT token
         let claims = Claims {
-            sub: user.id.unwrap().to_string(), 
+            id: user.id.unwrap().to_string(),
             exp: (Utc::now() + Duration::hours(24)).timestamp() as usize,
         };
 
