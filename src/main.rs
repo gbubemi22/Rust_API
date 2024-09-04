@@ -59,7 +59,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(
                 ErrorHandlers::new()
                     .handler(StatusCode::NOT_FOUND, not_found),
-                    // .default_handler(handle_error),
+                  // .default_handler(handle_error);
             )
           
             .service(default)

@@ -1,6 +1,5 @@
 use crate::utils::error::CustomError;
-use actix_web::{dev::ServiceRequest, error::ErrorUnauthorized, Error, HttpMessage, HttpRequest};
-use actix_web_httpauth::extractors::bearer::BearerAuth;
+use actix_web::{Error, HttpRequest};
 use jsonwebtoken::{decode, DecodingKey, Validation};
 use log::debug;
 use serde::{Deserialize, Serialize};

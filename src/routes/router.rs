@@ -10,11 +10,11 @@ pub fn config(cfg: &mut web::ServiceConfig) {
                     .route("/login", web::post().to(user_controller::login_user)), // Add more routes here
             )
             .service(
-                web::scope("/todos").route("", web::post().to(todo_controller::create_todo)),
-                // Add more routes here
-                // .route("", web::get().to(todo_controller::list_todos))
-                // .route("/{id}", web::get().to(todo_controller::get_todo))
-                // .route("/{id}", web::put().to(todo_controller::update_todo))
+                web::scope("/todos")
+                    .route("", web::post().to(todo_controller::create_todo))
+                    .route("", web::get().to(todo_controller::list_all))
+                    .route("/{id}", web::get().to(todo_controller::list_one))
+                    .route("/{id}", web::put().to(todo_controller::update_todo)),
                 // .route("/{id}", web::delete().to(todo_controller::delete_todo)),
             ),
     );

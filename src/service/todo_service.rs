@@ -43,9 +43,19 @@ impl TodoService {
     }
 
     pub async fn list_todos(&self, user_id: ObjectId) -> Result<Vec<Todo>, String> {
+        println!("Querying todos for user_id: {}", user_id);
+
+        // Check how many documents match the user_id
+        let count = self
+            .collection
+            .count_documents(doc! { "user_id": user_id }, None)
+            .await
+            .map_err(|e| e.to_string())?;
+        println!("Number of todos for user_id {}: {}", user_id, count);
+
         let mut cursor = self
             .collection
-            .find(doc! { "userId": user_id }, None)
+            .find(doc! { "user_id": user_id }, None)
             .await
             .map_err(|e| e.to_string())?;
 
@@ -59,7 +69,7 @@ impl TodoService {
 
     pub async fn get_todo(&self, id: ObjectId, user_id: ObjectId) -> Result<Option<Todo>, String> {
         self.collection
-            .find_one(doc! { "_id": id, "userId": user_id }, None)
+            .find_one(doc! { "_id": id, "user_id": user_id }, None)
             .await
             .map_err(|e| e.to_string())
     }
@@ -73,7 +83,7 @@ impl TodoService {
         let update_result = self
             .collection
             .update_one(
-                doc! { "_id": id, "userId": user_id },
+                doc! { "_id": id, "user_id": user_id },
                 doc! { "$set": todo.to_doc() },
                 None,
             )

@@ -2,6 +2,7 @@ use crate::model::user_model::User;
 use crate::utils::error::CustomError;
 use crate::utils::model::LoginRequests;
 use crate::utils::{hashing, password_validation};
+use actix_web::ResponseError;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{encode, EncodingKey, Header};
 
@@ -36,30 +37,27 @@ impl UserService {
         username: String,
         email: String,
         password: String,
-    ) -> Result<ObjectId, String> {
+    ) -> Result<ObjectId, CustomError> {
         // Check if email already exists
-        if self.email_exists(&email).await.map_err(|e| e.to_string())? {
-            // return Err(CustomError::ConflictError("Email already exists".to_string()).to_string());
-            return Err("Email already exists".to_string());
-        }
-        // Check if username already exists
-        if self
-            .username_exists(&username)
-            .await
-            .map_err(|e| e.to_string())?
-        {
-            // return Err(
-            //     CustomError::ConflictError("Username already exists".to_string()).to_string(),
-            // );
-            return Err("Username already exists".to_string());
+        if self.email_exists(&email).await.map_err(|_| {
+            CustomError::InternalServerError("Failed to check email existence".to_string())
+        })? {
+            return Err(CustomError::ConflictError("Email already exists".to_string()));
         }
 
+    // Check if username already exists
+    if self.username_exists(&username).await.map_err(|_| {
+        CustomError::InternalServerError("Failed to check username existence".to_string())
+    })? {
+        return Err(CustomError::ConflictError("Username already exists".to_string()));
+    }
+        // Validate password
         password_validation::validate_password(&password)
-            .map_err(|e| CustomError::BadRequestError(e.to_string()))
-            .ok();
+            .map_err(|e| CustomError::BadRequestError(e.to_string()))?;
 
         // Hash the password
-        let hashed_password = hashing::hash_password(&password).map_err(|e| e.to_string())?;
+        let hashed_password = hashing::hash_password(&password)
+            .map_err(|e| CustomError::InternalServerError(e.to_string()))?;
 
         // Create new user
         let new_user = User {
@@ -74,13 +72,12 @@ impl UserService {
             .collection
             .insert_one(new_user, None)
             .await
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| CustomError::InternalServerError(e.to_string()))?;
 
         // Return the inserted ID
-        result
-            .inserted_id
-            .as_object_id()
-            .ok_or_else(|| "Failed to get inserted ID".to_string())
+        result.inserted_id.as_object_id().ok_or_else(|| {
+            CustomError::InternalServerError("Failed to get inserted ID".to_string())
+        })
     }
 
     async fn email_exists(&self, email: &str) -> Result<bool, mongodb::error::Error> {
